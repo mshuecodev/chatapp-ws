@@ -1,24 +1,15 @@
-import mongoose, { Schema, Document } from "mongoose"
-
-export interface IUser extends Document {
-	username: string
+export type AuthUser = {
+	id: string
 	email: string
-	password: string
+	name?: string
+	image?: string
+	createdAt: Date
+	updatedAt: Date
+	isEmailVerified?: boolean
+	isActive?: boolean
+	role?: "user" | "admin"
+	accessToken?: string
+	refreshToken?: string
+	app_metadata?: Record<string, any>
+	user_metadata?: Record<string, any>
 }
-
-const UserSchema: Schema = new Schema({
-	username: {
-		type: String,
-		unique: true
-	},
-	email: {
-		type: String,
-		unique: true
-	},
-	password: {
-		type: String,
-		required: true
-	}
-})
-
-export default mongoose.model<IUser>("User", UserSchema)
