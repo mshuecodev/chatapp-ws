@@ -1,7 +1,7 @@
 import type { Request, Response } from "express"
 import { asyncHandler } from "../utils/http"
 import { setAuthCookies, clearAuthCookies } from "../utils/cookies"
-import { signInWithEmail, signUpWithEmail, refreshSession, signOut } from "../services/auth.service"
+import { signInWithEmail, signUpWithEmail, refreshSession } from "../services/auth.service"
 
 export const postSignUp = asyncHandler(async (req: Request, res: Response) => {
 	const { email, password } = req.body as { email?: string; password?: string }
@@ -35,11 +35,14 @@ export const postRefresh = asyncHandler(async (req: Request, res: Response) => {
 })
 
 export const postSignOut = asyncHandler(async (req: Request, res: Response) => {
-	const accessToken = (req.cookies?.["sb-access-token"] as string) || (req.headers.authorization?.split(" ")[1] ?? "")
-	try {
-		if (accessToken) await signOut(accessToken)
-	} finally {
-		clearAuthCookies().forEach((h) => res.append("Set-Cookie", h))
-	}
-	return res.json({ ok: true })
+	// const accessToken = (req.cookies?.["sb-access-token"] as string) || (req.headers.authorization?.split(" ")[1] ?? "")
+	// try {
+	// 	if (accessToken) await signOut(accessToken)
+	// } finally {
+	// 	clearAuthCookies().forEach((h) => res.append("Set-Cookie", h))
+	// }
+	// return res.json({ ok: true })
+	const headers = clearAuthCookies()
+	headers.forEach((h) => res.append("Set-Cookie", h))
+	res.json({ message: "Signed out" })
 })

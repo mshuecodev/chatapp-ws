@@ -22,13 +22,13 @@ export const refreshSession = async (refreshToken: string) => {
 	return data.session
 }
 
-export const signOut = async (accessToken: string) => {
-	// Supabase requires the access token to revoke refresh tokens of the session
-	const { error } = await supabase.auth.signOut({ scope: "global" })
-	// Note: signOut() relies on the current client session; when using server client, it
-	// will still succeed but won’t target a specific user token. We clear cookies regardless.
-	if (error) throw BadRequest("Sign out failed", error)
-}
+// export const signOut = async (accessToken: string) => {
+// 	// Supabase requires the access token to revoke refresh tokens of the session
+// 	const { error } = await supabase.auth.signOut({ scope: "global" })
+// 	// Note: signOut() relies on the current client session; when using server client, it
+// 	// will still succeed but won’t target a specific user token. We clear cookies regardless.
+// 	if (error) throw BadRequest("Sign out failed", error)
+// }
 
 export const getUserFromAccessToken = async (accessToken: string) => {
 	const { data, error } = await supabase.auth.getUser(accessToken)
