@@ -38,12 +38,12 @@ const MessageSchema: Schema = new Schema({
 		type: Boolean,
 		default: false
 	},
-	groupId: {
-		type: String,
-		required: function () {
-			return this.isGroupMessage
-		}
-	},
+	// groupId: {
+	// 	type: String,
+	// 	required: function () {
+	// 		return this.isGroupMessage
+	// 	}
+	// },
 	attachments: [
 		{
 			type: {
