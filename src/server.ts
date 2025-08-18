@@ -5,7 +5,7 @@ import connectDB from "./config/db"
 import { saveMessage } from "./controllers/chat.controller"
 import { setupSocket } from "./services/socket.service"
 
-connectDB()
+// connectDB()
 
 const server = http.createServer(app)
 const io = new Server(server, {

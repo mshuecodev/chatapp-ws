@@ -9,7 +9,10 @@ export const signUpWithEmail = async (email: string, password: string) => {
 
 export const signInWithEmail = async (email: string, password: string) => {
 	const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-	if (error) throw Unauthorized("Invalid credentials")
+	if (error) {
+		console.log("Sign in error:", error)
+		throw Unauthorized("Invalid credentials")
+	}
 	return data // contains session (access_token, refresh_token)
 }
 
