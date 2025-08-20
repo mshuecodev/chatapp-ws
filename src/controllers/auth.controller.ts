@@ -26,7 +26,9 @@ export const postSignIn = asyncHandler(async (req: Request, res: Response) => {
 
 export const postRefresh = asyncHandler(async (req: Request, res: Response) => {
 	const refreshToken = (req.cookies?.["sb-refresh-token"] as string) || (req.body?.refresh_token as string)
-	if (!refreshToken) return res.status(400).json({ message: "missing refresh token" })
+	if (!refreshToken) {
+		return res.status(400).json({ message: "missing refresh token" })
+	}
 
 	const newSession = await refreshSession(refreshToken)
 	const headers = setAuthCookies(newSession.access_token, newSession.refresh_token)
