@@ -4,7 +4,6 @@ import { BadRequest, Unauthorized } from "../utils/errors"
 export const signUpWithEmail = async (email: string, password: string) => {
 	const { data, error } = await supabase.auth.signUp({ email, password })
 	if (error) throw BadRequest("Sign up failed", error)
-	console.log("signUpWithEmail data:", data)
 	return data
 }
 
@@ -14,7 +13,6 @@ export const signInWithEmail = async (email: string, password: string) => {
 		console.log("Sign in error:", error)
 		throw Unauthorized("Invalid credentials")
 	}
-	console.log("signInWithEmail data:", data)
 	return data // contains session (access_token, refresh_token)
 }
 

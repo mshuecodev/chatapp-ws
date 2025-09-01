@@ -9,7 +9,7 @@ export const postSignUp = asyncHandler(async (req: Request, res: Response) => {
 
 	const { user } = await signUpWithEmail(email, password)
 	// Depending on your Supabase email confirmation settings, a session may not be returned here.
-	return res.status(201).json({ user })
+	return res.status(201).json({ user, message: "Sign-up successful. Check your email to verify your account before logging in." })
 })
 
 export const postSignIn = asyncHandler(async (req: Request, res: Response) => {
