@@ -48,3 +48,9 @@ export const postSignOut = asyncHandler(async (req: Request, res: Response) => {
 	headers.forEach((h) => res.append("Set-Cookie", h))
 	res.json({ message: "Signed out" })
 })
+
+export const getAllUsers = asyncHandler(async (req: Request, res: Response) => {
+	const users = await import("../services/auth.service").then((mod) => mod.getAllUsers())
+
+	res.json(users)
+})

@@ -1,5 +1,5 @@
 import { Router } from "express"
-import { postSignUp, postSignIn, postRefresh, postSignOut } from "../controllers/auth.controller"
+import { postSignUp, postSignIn, postRefresh, postSignOut, getAllUsers } from "../controllers/auth.controller"
 import { requireAuth } from "../middlewares/auth"
 
 const router = Router()
@@ -11,6 +11,8 @@ router.post("/refresh", postRefresh)
 
 // Protected routes
 router.post("/signout", requireAuth, postSignOut)
+
+router.get("/all", requireAuth, getAllUsers)
 
 // Example: a test route that requires authentication
 router.get("/me", requireAuth, (req, res) => {

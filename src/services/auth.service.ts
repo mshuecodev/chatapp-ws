@@ -35,3 +35,10 @@ export const getUserFromAccessToken = async (accessToken: string) => {
 	if (error || !data.user) throw Unauthorized()
 	return data.user
 }
+
+export const getAllUsers = async () => {
+	const { data, error } = await supabase.auth.admin.listUsers()
+	console.log("All users:", data, error)
+	if (error) throw BadRequest("Failed to fetch users", error)
+	return data.users
+}
