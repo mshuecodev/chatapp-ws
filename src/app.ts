@@ -12,8 +12,10 @@ const app = express()
 app.use(cors())
 app.use(express.json())
 
-app.use("/auth", authRoutes)
-app.use("/admin", adminRoutes)
-app.use("/profile", profileRoutes)
+app.use("/auth", authRoutes) //mongodb
+
+// supabase routes
+app.use("/sb/admin", adminRoutes) //supabase
+app.use("/sb/profile", profileRoutes) //supabase
 
 export default app

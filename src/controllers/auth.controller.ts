@@ -1,50 +1,147 @@
-import { Request, Response } from "express"
-import bcrypt from "bcryptjs"
-import User from "../models/User"
-import generateToken from "../utils/jwtUtils"
+import { RequestHandler, Request, Response } from "express"
+// import bcrypt from "bcryptjs"
+// import User from "../models/User"
+// import generateToken from "../utils/jwtUtils"
+import { supabaseAdmin, supabase } from "../config/supabase"
 
-export const register = async (req: Request, res: Response) => {
-	const { username, email, password } = req.body
+// MONGO FUNCTION
+// export const register = async (req: Request, res: Response) => {
+// 	const { username, email, password } = req.body
 
-	try {
-		const hashedPassword = await bcrypt.hash(password, 10)
-		const user = await User.create({
-			username,
-			email,
-			password: hashedPassword
-		})
+// 	try {
+// 		const hashedPassword = await bcrypt.hash(password, 10)
+// 		const user = await User.create({
+// 			username,
+// 			email,
+// 			password: hashedPassword
+// 		})
 
-		const token = generateToken(user._id as string)
+// 		const token = generateToken(user._id as string)
 
-		if (token) {
-			res.status(201).json({ token: generateToken(user._id as string) })
-		} else {
-			res.status(500).json({ message: "Token generation failed" })
+// 		if (token) {
+// 			res.status(201).json({ token: generateToken(user._id as string) })
+// 		} else {
+// 			res.status(500).json({ message: "Token generation failed" })
+// 		}
+// 	} catch (error) {
+// 		console.error(error)
+// 		res.status(500).json({ message: "Server error" })
+// 	}
+// }
+
+// export const login = async (req: Request, res: Response) => {
+// 	const { email, password } = req.body
+
+// 	try {
+// 		const user = await User.findOne({ email })
+
+// 		if (!user) {
+// 			res.status(401).json({ message: "Invalid credentials" })
+// 			return
+// 		}
+// 		const isMatch = await bcrypt.compare(password, user.password)
+
+// 		if (!isMatch) {
+// 			res.status(401).json({ message: "Invalid credentials" })
+// 		}
+// 		res.status(200).json({ token: generateToken(user._id as string) })
+// 	} catch (error) {
+// 		console.error(error)
+// 		res.status(500).json({ message: "Server error" })
+// 	}
+// }
+
+export class AuthController {
+	/**
+	 * Signup flow:
+	 * 1. Create user with Supabase Auth
+	 * 2. Insert profile record
+	 * 3. Assign default role(s)
+	 */
+
+	static async signup(req: Request, res: Response) {
+		try {
+			const { email, password } = req.body
+
+			if (!email || !password) {
+				return res.status(400).json({ message: "Email and password are required" })
+			}
+
+			// 1. Create user via Supabase Auth
+			const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+				email,
+				password
+			})
+
+			if (signUpError || !signUpData.user) {
+				return res.status(400).json({ message: signUpError?.message || "Signup failed" })
+			}
+
+			const userId = signUpData.user.id
+
+			// 2. Create profile record
+			const { error: profileError } = await supabaseAdmin.from("profiles").insert({ id: userId, email })
+
+			if (profileError) {
+				return res.status(500).json({ message: "Failed to create profile" })
+			}
+
+			// 3. Assign default role (e.g., "user")
+			const { error: roleError } = await supabaseAdmin.from("user_roles").insert({ user_id: userId, role: "user" })
+
+			if (roleError) {
+				return res.status(500).json({ message: "Failed to assign role" })
+			}
+
+			res.status(201).json({
+				message: "Signup successful",
+				userId,
+				email
+			})
+		} catch (error) {
+			console.error("Signup error:", error)
+			res.status(500).json({ message: "Internal server error" })
 		}
-	} catch (error) {
-		console.error(error)
-		res.status(500).json({ message: "Server error" })
 	}
-}
 
-export const login = async (req: Request, res: Response) => {
-	const { email, password } = req.body
+	/**
+	 * Signin flow:
+	 * 1. Authenticate user via Supabase
+	 * 2. Return access token + refresh token
+	 */
 
-	try {
-		const user = await User.findOne({ email })
+	static async signin(req: Request, res: Response) {
+		try {
+			const { email, password } = req.body
 
-		if (!user) {
-			res.status(401).json({ message: "Invalid credentials" })
-			return
+			if (!email || !password) {
+				return res.status(400).json({ message: "Email and password are required" })
+			}
+
+			// Authenticate user
+			const { data, error } = await supabase.auth.signInWithPassword({
+				email,
+				password
+			})
+
+			if (error || !data.session) {
+				return res.status(401).json({ message: "Invalid credentials" })
+			}
+
+			const { access_token, refresh_token, user } = data.session
+
+			res.status(200).json({
+				message: "Signin successful",
+				accessToken: access_token,
+				refreshToken: refresh_token,
+				user: {
+					id: user.id,
+					email: user.email
+				}
+			})
+		} catch (error) {
+			console.error("Signin error:", error)
+			res.status(500).json({ message: "Internal server error" })
 		}
-		const isMatch = await bcrypt.compare(password, user.password)
-
-		if (!isMatch) {
-			res.status(401).json({ message: "Invalid credentials" })
-		}
-		res.status(200).json({ token: generateToken(user._id as string) })
-	} catch (error) {
-		console.error(error)
-		res.status(500).json({ message: "Server error" })
 	}
 }

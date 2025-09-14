@@ -1,9 +1,11 @@
-import express from "express"
-import { register, login } from "../controllers/auth.controller"
+import { Router } from "express"
+// import { register, login } from "../controllers/auth.controller"
+import { AuthController } from "../controllers/auth.controller"
+import { asyncHandler } from "../utils/asyncHandler"
 
-const router = express.Router()
+const router = Router()
 
-router.post("/register", register)
-router.post("/login", login)
+router.post("/signup", asyncHandler(AuthController.signup))
+router.post("/signin", asyncHandler(AuthController.signin))
 
 export default router
