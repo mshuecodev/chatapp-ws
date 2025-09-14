@@ -80,16 +80,29 @@ export class AuthController {
 			const userId = signUpData.user.id
 
 			// 2. Create profile record
-			const { error: profileError } = await supabaseAdmin.from("profiles").insert({ id: userId, email })
+			const { error: profileError } = await supabaseAdmin.from("profiles2").insert({
+				user_id: userId,
+				email
+			})
 
 			if (profileError) {
-				return res.status(500).json({ message: "Failed to create profile" })
+				// rollback user if profile fails
+				await supabaseAdmin.auth.admin.deleteUser(userId)
+				return res.status(500).json({ message: "Failed to create profile, user rolled back." })
 			}
 
 			// 3. Assign default role (e.g., "user")
-			const { error: roleError } = await supabaseAdmin.from("user_roles").insert({ user_id: userId, role: "user" })
+			const { error: roleError } = await supabaseAdmin.from("user_roles").insert({
+				user_id: userId,
+				role: "user"
+			})
 
 			if (roleError) {
+				// rollback profile + user
+
+				await supabaseAdmin.from("profiles2").delete().eq("id", userId)
+				await supabaseAdmin.auth.admin.deleteUser(userId)
+
 				return res.status(500).json({ message: "Failed to assign role" })
 			}
 
