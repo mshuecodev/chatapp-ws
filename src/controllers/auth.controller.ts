@@ -143,7 +143,8 @@ export class AuthController {
 			})
 
 			if (error || !data.session) {
-				return res.status(401).json({ message: "Invalid credentials" })
+				console.log("Signin error:", error?.code, error?.message)
+				return res.status(401).json({ message: error?.message })
 			}
 
 			const { access_token, refresh_token, user } = data.session

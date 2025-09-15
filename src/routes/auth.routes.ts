@@ -7,5 +7,6 @@ const router = Router()
 
 router.post("/signup", asyncHandler(AuthController.signup))
 router.post("/signin", asyncHandler(AuthController.signin))
+router.post("/resend", asyncHandler(AuthController.resendVerificationEmail))
 
 export default router
