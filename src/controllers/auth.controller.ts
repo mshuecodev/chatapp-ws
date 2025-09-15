@@ -144,18 +144,18 @@ export class AuthController {
 
 			if (error || !data.session) {
 				console.log("Signin error:", error?.code, error?.message)
-				return res.status(401).json({ message: error?.message })
+				return res.status(Number(error?.status)).json({ message: error?.message })
 			}
 
 			const { access_token, refresh_token, user } = data.session
 
-			if (!user) {
-				return res.status(401).json({ message: "Invalid login credentials" })
-			}
+			// if (!user) {
+			// 	return res.status(401).json({ message: "Invalid login credentials" })
+			// }
 
-			if (!user.email_confirmed_at) {
-				return res.status(403).json({ message: "Please verify your email before signing in." })
-			}
+			// if (!user.email_confirmed_at) {
+			// 	return res.status(403).json({ message: "Please verify your email before signing in." })
+			// }
 
 			res.status(200).json({
 				message: "Signin successful",
