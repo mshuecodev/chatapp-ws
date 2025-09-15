@@ -4,6 +4,8 @@ import { RequestHandler, Request, Response } from "express"
 // import generateToken from "../utils/jwtUtils"
 import { supabaseAdmin, supabase } from "../config/supabase"
 
+const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:3000"
+
 // MONGO FUNCTION
 // export const register = async (req: Request, res: Response) => {
 // 	const { username, email, password } = req.body
@@ -70,7 +72,10 @@ export class AuthController {
 			// 1. Create user via Supabase Auth
 			const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
 				email,
-				password
+				password,
+				options: {
+					emailRedirectTo: `${CLIENT_URL}/auth/callback` // URL where user will be redirected after verifying
+				}
 			})
 
 			if (signUpError || !signUpData.user) {
@@ -143,6 +148,14 @@ export class AuthController {
 
 			const { access_token, refresh_token, user } = data.session
 
+			if (!user) {
+				return res.status(401).json({ message: "Invalid login credentials" })
+			}
+
+			if (!user.email_confirmed_at) {
+				return res.status(403).json({ message: "Please verify your email before signing in." })
+			}
+
 			res.status(200).json({
 				message: "Signin successful",
 				accessToken: access_token,
@@ -155,6 +168,34 @@ export class AuthController {
 		} catch (error) {
 			console.error("Signin error:", error)
 			res.status(500).json({ message: "Internal server error" })
+		}
+	}
+
+	static async resendVerificationEmail(req: Request, res: Response) {
+		try {
+			const { email } = req.body
+			if (!email) {
+				return res.status(400).json({ message: "Email is required" })
+			}
+
+			const { data, error } = await supabase.auth.resend({
+				type: "signup",
+				email,
+				options: {
+					emailRedirectTo: `${CLIENT_URL}/auth/callback`
+				}
+			})
+
+			if (error) {
+				return res.status(400).json({ message: error.message })
+			}
+
+			res.status(200).json({
+				message: "Verification email resent successfully. Please check your inbox."
+			})
+		} catch (error) {
+			console.error("Resend verification error:", error)
+			res.status(500).json({ message: "Failed to resend verification email" })
 		}
 	}
 }
