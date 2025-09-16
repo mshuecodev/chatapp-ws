@@ -32,6 +32,7 @@ export class AuthController {
 			})
 
 			if (signUpError || !signUpData.user) {
+				console.log("Signup error:", signUpError?.code, signUpError?.message)
 				return res.status(400).json({ message: signUpError?.message || "Signup failed" })
 			}
 
@@ -45,6 +46,7 @@ export class AuthController {
 			})
 
 			if (profileError) {
+				console.log("Profile creation error:", profileError)
 				// rollback user if profile fails
 				await supabaseAdmin.auth.admin.deleteUser(userId)
 				return res.status(500).json({ message: "Failed to create profile, user rolled back." })
@@ -133,7 +135,7 @@ export class AuthController {
 				return res.status(400).json({ message: "Email is required" })
 			}
 
-			const { data, error } = await supabase.auth.resend({
+			const { error } = await supabase.auth.resend({
 				type: "signup",
 				email,
 				options: {
