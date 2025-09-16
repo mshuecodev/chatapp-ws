@@ -22,6 +22,13 @@ export class AuthController {
 				return res.status(400).json({ message: "Email and password are required" })
 			}
 
+			// Check if user already exists
+			const { data: existingUser, error: existingUserError } = await supabaseAdmin.from("profiles").select("id").eq("email", email).single()
+
+			if (existingUser && !existingUserError) {
+				return res.status(409).json({ message: "User with this email already exists or email not verified yet!" })
+			}
+
 			// 1. Create user via Supabase Auth
 			const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
 				email,
