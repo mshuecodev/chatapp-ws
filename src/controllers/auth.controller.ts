@@ -68,7 +68,7 @@ export class AuthController {
 			}
 
 			res.status(201).json({
-				message: "Signup successful",
+				message: signUpData.user.email ? "Signup successful! Please check your email to verify your account." : "Signup successful!",
 				userId,
 				email
 			})
