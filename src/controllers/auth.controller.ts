@@ -4,7 +4,7 @@ import { RequestHandler, Request, Response } from "express"
 // import generateToken from "../utils/jwtUtils"
 import { supabaseAdmin, supabase } from "../config/supabase"
 
-const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:3000"
+const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:8081"
 
 export class AuthController {
 	/**
@@ -34,7 +34,7 @@ export class AuthController {
 				email,
 				password,
 				options: {
-					emailRedirectTo: `${CLIENT_URL}/auth/callback` // URL where user will be redirected after verifying
+					emailRedirectTo: `${CLIENT_URL}/(auth)/callback` // URL where user will be redirected after verifying
 				}
 			})
 
@@ -146,7 +146,7 @@ export class AuthController {
 				type: "signup",
 				email,
 				options: {
-					emailRedirectTo: `${CLIENT_URL}/auth/callback`
+					emailRedirectTo: `${CLIENT_URL}/(auth)/callback`
 				}
 			})
 
