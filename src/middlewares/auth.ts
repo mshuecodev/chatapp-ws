@@ -23,16 +23,19 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
 			return
 		}
 
-		const token = header.split(" ")[1]
-		const { data, error } = await supabase.auth.getUser(token)
+		const token = header.startsWith("Bearer ") ? header.split(" ")[1] : header
+		if (!token) {
+			res.status(401).json({ message: "Invalid authorization header!" })
+			return
+		}
 
+		const { data, error } = await supabase.auth.getUser(token)
 		if (error || !data.user) {
-			res.status(401).json({ message: "Invalid token!" })
+			res.status(401).json({ message: "Invalid or expired token!" })
 			return
 		}
 
 		const user = data.user
-
 		const { data: rolesData, error: rolesError } = await supabaseAdmin.from("user_roles").select("role").eq("user_id", user.id)
 
 		if (rolesError) {
@@ -40,8 +43,6 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
 			res.status(500).json({ message: "Failed to fetch roles!" })
 			return
 		}
-
-		console.log("authentication", req.authUser)
 
 		req.authUser = {
 			id: user.id,

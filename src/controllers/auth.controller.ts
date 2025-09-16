@@ -6,53 +6,6 @@ import { supabaseAdmin, supabase } from "../config/supabase"
 
 const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:3000"
 
-// MONGO FUNCTION
-// export const register = async (req: Request, res: Response) => {
-// 	const { username, email, password } = req.body
-
-// 	try {
-// 		const hashedPassword = await bcrypt.hash(password, 10)
-// 		const user = await User.create({
-// 			username,
-// 			email,
-// 			password: hashedPassword
-// 		})
-
-// 		const token = generateToken(user._id as string)
-
-// 		if (token) {
-// 			res.status(201).json({ token: generateToken(user._id as string) })
-// 		} else {
-// 			res.status(500).json({ message: "Token generation failed" })
-// 		}
-// 	} catch (error) {
-// 		console.error(error)
-// 		res.status(500).json({ message: "Server error" })
-// 	}
-// }
-
-// export const login = async (req: Request, res: Response) => {
-// 	const { email, password } = req.body
-
-// 	try {
-// 		const user = await User.findOne({ email })
-
-// 		if (!user) {
-// 			res.status(401).json({ message: "Invalid credentials" })
-// 			return
-// 		}
-// 		const isMatch = await bcrypt.compare(password, user.password)
-
-// 		if (!isMatch) {
-// 			res.status(401).json({ message: "Invalid credentials" })
-// 		}
-// 		res.status(200).json({ token: generateToken(user._id as string) })
-// 	} catch (error) {
-// 		console.error(error)
-// 		res.status(500).json({ message: "Server error" })
-// 	}
-// }
-
 export class AuthController {
 	/**
 	 * Signup flow:
@@ -63,7 +16,7 @@ export class AuthController {
 
 	static async signup(req: Request, res: Response) {
 		try {
-			const { email, password } = req.body
+			const { email, password, role } = req.body
 
 			if (!email || !password) {
 				return res.status(400).json({ message: "Email and password are required" })
@@ -85,9 +38,10 @@ export class AuthController {
 			const userId = signUpData.user.id
 
 			// 2. Create profile record
-			const { error: profileError } = await supabaseAdmin.from("profiles2").insert({
+			const { error: profileError } = await supabaseAdmin.from("profiles").insert({
 				user_id: userId,
-				email
+				email,
+				role: role || "user"
 			})
 
 			if (profileError) {
@@ -99,13 +53,13 @@ export class AuthController {
 			// 3. Assign default role (e.g., "user")
 			const { error: roleError } = await supabaseAdmin.from("user_roles").insert({
 				user_id: userId,
-				role: "user"
+				role: role || "user"
 			})
 
 			if (roleError) {
 				// rollback profile + user
 
-				await supabaseAdmin.from("profiles2").delete().eq("id", userId)
+				await supabaseAdmin.from("profiles").delete().eq("id", userId)
 				await supabaseAdmin.auth.admin.deleteUser(userId)
 
 				return res.status(500).json({ message: "Failed to assign role" })
@@ -149,13 +103,13 @@ export class AuthController {
 
 			const { access_token, refresh_token, user } = data.session
 
-			// if (!user) {
-			// 	return res.status(401).json({ message: "Invalid login credentials" })
-			// }
-
-			// if (!user.email_confirmed_at) {
-			// 	return res.status(403).json({ message: "Please verify your email before signing in." })
-			// }
+			// refresh token to HTTP-only cookie
+			res.cookie("refresh_token", refresh_token, {
+				httpOnly: true,
+				secure: process.env.NODE_ENV === "production",
+				sameSite: "strict",
+				maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
+			})
 
 			res.status(200).json({
 				message: "Signin successful",
@@ -197,6 +151,50 @@ export class AuthController {
 		} catch (error) {
 			console.error("Resend verification error:", error)
 			res.status(500).json({ message: "Failed to resend verification email" })
+		}
+	}
+
+	/**
+	 * Refresh session:
+	 * 1. Get refresh token from HTTP-only cookie
+	 * 2. Use Supabase to refresh session
+	 * 3. Set new refresh token in cookie, send new access token to frontend
+	 */
+	static async refreshSession(req: Request, res: Response) {
+		try {
+			const refreshToken = req.cookies?.refreshToken
+			if (!refreshToken) {
+				return res.status(401).json({ message: "Refresh token missing" })
+			}
+
+			const { data, error } = await supabase.auth.refreshSession({ refresh_token: refreshToken })
+
+			if (error || !data.session) {
+				return res.status(401).json({ message: "Invalid or expired refresh token" })
+			}
+
+			const { access_token, refresh_token, user } = data.session
+
+			// Update refresh token in HTTP-only cookie
+			res.cookie("refreshToken", refresh_token, {
+				httpOnly: true,
+				secure: process.env.NODE_ENV === "production",
+				sameSite: "strict",
+				maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
+			})
+
+			// Send new access token to frontend
+			res.status(200).json({
+				message: "Session refreshed",
+				accessToken: access_token,
+				user: {
+					id: user.id,
+					email: user.email
+				}
+			})
+		} catch (error) {
+			console.error("Refresh session error:", error)
+			res.status(500).json({ message: "Internal server error" })
 		}
 	}
 }
