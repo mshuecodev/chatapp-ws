@@ -5,6 +5,7 @@ import cookieParser from "cookie-parser"
 import authRoutes from "./routes/auth.routes"
 import adminRoutes from "./routes/admin.routes"
 import profileRoutes from "./routes/profile.routes"
+import conversationRoutes from "./routes/conversation.routes"
 
 dotenv.config()
 
@@ -24,6 +25,7 @@ app.use(cookieParser())
 app.use("/sb/admin", adminRoutes)
 app.use("/sb/profile", profileRoutes)
 app.use("/sb/auth", authRoutes)
+app.use("/sb/conversation", conversationRoutes)
 
 // 404 handler
 app.use((req, res) => {
