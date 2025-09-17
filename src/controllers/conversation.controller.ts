@@ -70,4 +70,41 @@ export class ConversationController {
 			res.status(500).json({ message: "Failed to sign attachment URL" })
 		}
 	}
+
+	static async getConversations(req: Request, res: Response) {
+		try {
+			const userId = req.authUser?.id
+			if (!userId) {
+				return res.status(401).json({ message: "Not authenticated" })
+			}
+
+			// Get all conversations where user is a member
+			const { data, error } = await supabaseAdmin
+				.from("conversations")
+				.select(
+					`
+					id,
+					title,
+					is_group,
+					created_at,
+					created_by,
+					conversation_members!inner (
+						user_id,
+						role
+					)
+				`
+				)
+				.eq("conversation_members.user_id", userId)
+				.order("created_at", { ascending: false })
+
+			if (error) {
+				return res.status(500).json({ message: error.message })
+			}
+
+			res.status(200).json({ conversations: data })
+		} catch (error) {
+			console.error("Error fetching conversations:", error)
+			res.status(500).json({ message: "Failed to fetch conversations" })
+		}
+	}
 }
