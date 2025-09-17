@@ -112,7 +112,7 @@ export class AuthController {
 
 			const { access_token, refresh_token, user } = data.session
 
-			console.log("User signed in:", user.id, user.email)
+			// console.log("User signed in:", user.id, user.email)
 
 			// refresh token to HTTP-only cookie
 			res.cookie("refresh_token", refresh_token, {

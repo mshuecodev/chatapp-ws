@@ -53,4 +53,19 @@ export class AdminController {
 			res.status(500).json({ message: "Failed to assign role" })
 		}
 	}
+
+	static async getAllProfiles(req: Request, res: Response) {
+		try {
+			const { data: profiles, error } = await supabaseAdmin.from("profiles").select("*")
+
+			if (error) {
+				return res.status(500).json({ message: error.message })
+			}
+
+			res.status(200).json({ profiles })
+		} catch (error) {
+			console.error("Error fetching profiles:", error)
+			res.status(500).json({ message: "Failed to fetch profiles" })
+		}
+	}
 }

@@ -9,4 +9,6 @@ const router = Router()
 router.post("/users", authenticate, authorize("admin"), asyncHandler(AdminController.createUser))
 router.post("/roles", authenticate, authorize("admin"), asyncHandler(AdminController.assignRole))
 
+router.get("/users", authenticate, authorize("admin"), asyncHandler(AdminController.getAllProfiles))
+
 export default router
