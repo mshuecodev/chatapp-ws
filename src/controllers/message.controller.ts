@@ -1,6 +1,8 @@
 import { Request, Response } from "express"
+
 import { z } from "zod"
 import { supabaseAdmin } from "../config/supabase"
+const uuidSchema = z.string().uuid()
 
 export class MessageController {
 	// ✅ Send message
@@ -39,12 +41,29 @@ export class MessageController {
 	// ✅ Get messages in a conversation
 	static async getMessages(req: Request, res: Response) {
 		try {
-			const convoId = req.params.id
 			const userId = req.authUser?.id
+			const parsed = uuidSchema.safeParse(req.params.id)
+
+			console.log("parsed", parsed, parsed)
+
+			if (!parsed.success) {
+				return res.status(400).json({ message: "Invalid conversation ID" })
+			}
+			const convoId = parsed.data
+
 			if (!userId) return res.status(401).json({ message: "Not authenticated" })
 
+			console.log("check ids", convoId, userId)
 			// Membership check
-			const { data: member, error: memErr } = await supabaseAdmin.from("conversation_members").select("id").eq("conversation_id", convoId).eq("user_id", userId).single()
+			const { data: member, error: memErr } = await supabaseAdmin
+				.from("conversation_members")
+
+				.select("conversation_id, user_id")
+				.eq("conversation_id", convoId)
+				.eq("user_id", userId)
+				.maybeSingle()
+
+			console.log("check member", member, memErr)
 
 			if (memErr || !member) return res.status(403).json({ message: "Not a member" })
 
@@ -53,12 +72,12 @@ export class MessageController {
 				.from("messages")
 				.select(
 					`
-          id,
-          content,
-          created_at,
-          sender:profiles(id, display_name, avatar),
-          attachment:attachments(path, mime_type)
-        `
+						id,
+						body,
+						created_at,
+						sender:profiles(id, display_name, avatar),
+						attachment:attachments(path, mime_type)
+						`
 				)
 				.eq("conversation_id", convoId)
 				.order("created_at", { ascending: true })

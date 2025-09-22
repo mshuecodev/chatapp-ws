@@ -6,6 +6,7 @@ import authRoutes from "./routes/auth.routes"
 import adminRoutes from "./routes/admin.routes"
 import profileRoutes from "./routes/profile.routes"
 import conversationRoutes from "./routes/conversation.routes"
+import messageRoutes from "./routes/messages.routes"
 
 dotenv.config()
 
@@ -26,6 +27,7 @@ app.use("/sb/admin", adminRoutes)
 app.use("/sb/profile", profileRoutes)
 app.use("/sb/auth", authRoutes)
 app.use("/sb/conversation", conversationRoutes)
+app.use("/sb/chat", messageRoutes)
 
 // 404 handler
 app.use((req, res) => {
