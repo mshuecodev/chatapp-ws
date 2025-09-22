@@ -76,72 +76,6 @@ export class ConversationController {
 		}
 	}
 
-	// List conversations for authenticated user
-	// static async getConversations(req: Request, res: Response) {
-	// 	try {
-	// 		const userId = req.authUser?.id
-	// 		if (!userId) {
-	// 			return res.status(401).json({ message: "Not authenticated" })
-	// 		}
-
-	// 		const { data: conversations, error } = await supabaseAdmin
-	// 			.from("conversations")
-	// 			.select(
-	// 				`
-	// 				id,
-	// 				is_group,
-	// 				title,
-	// 				created_at,
-	// 				conversation_members(
-	// 					user_id,
-	// 					role,
-	// 					joined_at,
-	// 					profiles(full_name, avatar_url)
-
-	// 				),
-	// 				messages(
-	// 					id,
-	// 					body,
-	// 					created_at
-	// 				)
-	// 			`
-	// 			)
-	// 			.order("created_at", { ascending: false })
-	// 			.returns<Conversation[]>()
-
-	// 		if (error) throw error
-
-	// 		// ✅ Format conversations for frontend
-	// 		const result = conversations.map((c) => {
-	// 			if (c.is_group) {
-	// 				return {
-	// 					id: c.id,
-	// 					title: c.title,
-	// 					lastMessage: c.messages?.[0]?.body || null,
-	// 					members: c.conversation_members.map((m) => ({
-	// 						id: m.user_id,
-	// 						name: m.profiles.full_name,
-	// 						avatar: m.profiles.avatar_url
-	// 					}))
-	// 				}
-	// 			} else {
-	// 				const other = c.conversation_members.find((m) => m.user_id !== userId)
-	// 				return {
-	// 					id: c.id,
-	// 					title: other?.profiles.full_name || "Unknown",
-	// 					avatar: other?.profiles.avatar_url || null,
-	// 					lastMessage: c.messages?.[0]?.body || null
-	// 				}
-	// 			}
-	// 		})
-
-	// 		res.status(200).json({ conversations: result })
-	// 	} catch (error) {
-	// 		console.error("Error fetching conversations:", error)
-	// 		res.status(500).json({ message: "Failed to fetch conversations" })
-	// 	}
-	// }
-
 	// Get signed upload URL for attachments
 	static async signAttachmentUrl(req: Request, res: Response) {
 		try {
@@ -179,61 +113,100 @@ export class ConversationController {
 				return res.status(401).json({ message: "Not authenticated" })
 			}
 
+			console.log("userid", userId)
+
 			const { data: conversations, error } = await supabaseAdmin
 				.from("conversations")
 				.select(
 					`
-				id,
-				is_group,
-				title,
-				created_at,
-				conversation_members (
-					user_id,
-					role,
-					joined_at,
-					profiles (
-						display_name,
-						avatar_url
-					)
-				),
-				messages!messages_conversation_id_fkey (
-					id,
-					body,
-					created_at
+						id,
+						is_group,
+						title,
+						created_at,
+						conversation_members (
+							user_id,
+							role,
+							joined_at,
+							profiles (
+								id,
+								display_name,
+								avatar_url
+							)
+						),
+						messages:messages!messages_conversation_id_fkey (
+							id,
+							body,
+							created_at,
+							sender: profiles!messages_sender_id_fkey (
+								id,
+								display_name,
+								avatar_url
+							)
+						)
+					`
 				)
-			`
-				)
-				.eq("conversation_members.user_id", userId) // only conversations the user is in
+				// .eq("conversation_members.user_id", userId) // only fetch where current user is member
 				.order("created_at", { ascending: false })
-				// 👇 limit messages to the latest one
-				.limit(1, { foreignTable: "messages" })
-				.returns<any>() // define a Conversation type if you want
+				.limit(1, { foreignTable: "messages" }) // ✅ only latest message per conversation
+			// .returns<any>()
 
 			if (error) throw error
 
-			// ✅ Format conversations for frontend
+			console.log("conversations here", conversations)
+
+			// ✅ Format for frontend
 			const result = conversations.map((c: any) => {
-				if (c.is_group) {
+				const lastMessage = c.messages?.[0] || null
+				const isGroup = c.is_group === true || c.is_group === "true" || c.is_group === 1
+
+				console.log("check map", c.conversation_members?.length, c.conversation_members)
+
+				if (isGroup) {
+					console.log("check profile ", isGroup, c.conversation_members)
 					return {
 						id: c.id,
 						title: c.title,
-						lastMessage: c.messages?.[0]?.body || null,
+						lastMessage: lastMessage
+							? {
+									id: lastMessage.id,
+									body: lastMessage.body,
+									createdAt: lastMessage.created_at,
+									sender: lastMessage.sender
+							  }
+							: null,
 						members: c.conversation_members.map((m: any) => ({
 							id: m.user_id,
-							name: m.profiles.display_name,
-							avatar: m.profiles.avatar_url
+							name: m.display_name,
+							avatar: m.avatar_url
 						}))
 					}
 				} else {
+					// console.log("check profile else here", isGroup, c.conversation_members)
+					// One-on-one → find the other participant
+					console.log("check conversation_member", c.conversation_members)
 					const other = c.conversation_members.find((m: any) => m.user_id !== userId)
+
+					console.log("else here", other?.profiles.display_name)
 					return {
 						id: c.id,
 						title: other?.profiles.display_name || "Unknown",
 						avatar: other?.profiles.avatar_url || null,
-						lastMessage: c.messages?.[0]?.body || null
+						lastMessage: lastMessage
+							? {
+									id: lastMessage.id,
+									body: lastMessage.body,
+									createdAt: lastMessage.created_at,
+									sender: lastMessage.sender
+							  }
+							: null
 					}
 				}
 			})
+
+			console.log("result here", result)
+
+			// Sort conversations by last message timestamp (descending)
+			// result.sort((a: any, b: any) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime())
 
 			res.status(200).json({ conversations: result })
 		} catch (error) {
