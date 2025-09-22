@@ -34,7 +34,7 @@ export class AuthController {
 				email,
 				password,
 				options: {
-					emailRedirectTo: `${CLIENT_URL}/(auth)/callback` // URL where user will be redirected after verifying
+					emailRedirectTo: `${CLIENT_URL}/callback` // URL where user will be redirected after verifying
 				}
 			})
 
@@ -47,7 +47,7 @@ export class AuthController {
 
 			// 2. Create profile record
 			const { error: profileError } = await supabaseAdmin.from("profiles").insert({
-				user_id: userId,
+				id: userId,
 				email,
 				role: role || "user"
 			})
@@ -148,7 +148,7 @@ export class AuthController {
 				type: "signup",
 				email,
 				options: {
-					emailRedirectTo: `${CLIENT_URL}/(auth)/callback`
+					emailRedirectTo: `${CLIENT_URL}/callback`
 				}
 			})
 

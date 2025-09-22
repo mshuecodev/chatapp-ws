@@ -1,5 +1,5 @@
 import { Request, Response } from "express"
-import { supabaseAdmin } from "../config/supabase"
+import { supabase, supabaseAdmin } from "../config/supabase"
 
 export class AdminController {
 	static async createUser(req: Request, res: Response) {
@@ -54,9 +54,15 @@ export class AdminController {
 		}
 	}
 
+	// get profiles other the current user
 	static async getAllProfiles(req: Request, res: Response) {
 		try {
-			const { data: profiles, error } = await supabaseAdmin.from("profiles").select("*")
+			const userId = req.authUser?.id
+			if (!userId) {
+				return res.status(401).json({ message: "Not authenticated" })
+			}
+
+			const { data: profiles, error } = await supabase.from("profiles").select("*").neq("id", userId)
 
 			if (error) {
 				return res.status(500).json({ message: error.message })

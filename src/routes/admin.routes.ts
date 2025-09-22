@@ -6,7 +6,7 @@ import { asyncHandler } from "../utils/asyncHandler"
 
 const router = Router()
 
-router.post("/users", authenticate, authorize("admin"), asyncHandler(AdminController.createUser))
+router.post("/users", authenticate, authorize(["admin", "user"]), asyncHandler(AdminController.createUser))
 router.post("/roles", authenticate, authorize("admin"), asyncHandler(AdminController.assignRole))
 
 router.get("/users", authenticate, authorize("admin"), asyncHandler(AdminController.getAllProfiles))

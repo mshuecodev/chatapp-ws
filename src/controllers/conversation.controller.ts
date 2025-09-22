@@ -98,7 +98,7 @@ export class ConversationController {
 					),
 					messages(
 						id,
-						content,
+						body,
 						created_at
 					)
 				`
