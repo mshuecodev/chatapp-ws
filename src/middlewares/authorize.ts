@@ -10,6 +10,8 @@ export function authorize(requiredRoles: string | string[]) {
 		const roles = Array.isArray(requiredRoles) ? requiredRoles : [requiredRoles]
 		const hasRole = req.authUser.roles.some((role) => roles.includes(role))
 
+		console.log("role check", hasRole, requiredRoles)
+
 		if (!hasRole) {
 			res.status(403).json({ message: "Forbidden: insufficient role" })
 			return
